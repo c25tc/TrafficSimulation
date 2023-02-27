@@ -10,23 +10,27 @@ public class Car {
     float viewDistance;
     float[] distances;
     Road closestRoad;
+    PVector frontPoint;
     PVector rightFrontPoint;
     PVector leftFrontPoint;
 
+
     public Car(int x, int y) {
         this.pos = new PVector(x, y);
-        this.rotation = 80;
-        this.speed = 1;
-        this.drivingSpeed = 1 + ((float)Math.random()/10 - 0.05f);
+        this.rotation = 60; // arbitrary
+        this.speed = 1; // arbitrary
+        this.drivingSpeed = 1 + ((float)Math.random()/10 - 0.05f); // to simulate different driving preferences
         this.closestRoad = findClosestRoad();
-        this.viewDistance = 80;
-        this.rightFrontPoint = new PVector();
-        this.leftFrontPoint = new PVector();
+        this.viewDistance = 80; // can change
+        this.frontPoint = new PVector();
+        this.rightFrontPoint = new PVector(); // DEBUGGING: so i can draw it
+        this.leftFrontPoint = new PVector(); // DEBUGGING: so i can draw it
         // top, top right, right, bottom right, bottom, bottom left, left, top left
         this.distances = new float[8];
     }
 
-    public Road findClosestRoad() {
+    // github copilot
+    public Road findClosestRoad() { // might want to change so it doesn't just look at the two ends but at the whole
         Road closestRoad = null;
         float closestDistance = 1000000;
         for (Road road: TrafficSimulation.roads) {
@@ -47,58 +51,73 @@ public class Car {
     public void update() {
         this.closestRoad = findClosestRoad();
         this.speed = this.closestRoad.speedLimit * this.drivingSpeed;
+
         // for the front of the car
-        // todo: add more sensors
-        // todo: make this a for loop that loops through all of the roads
-        PVector frontPoint = new PVector(cos(radians(this.rotation)) * viewDistance + this.pos.x, sin(radians(this.rotation)) * viewDistance + this.pos.y);
-        float shortestDistance = 1000000;
-        for (Road road: TrafficSimulation.roads) {
-            PVector rightIntersectionPoint = lineLineIntersection(this.pos, frontPoint, road.getOffsets(TrafficSimulation.roadWidth)[0], road.getOffsets(TrafficSimulation.roadWidth)[1]);
-            PVector leftIntersectionPoint = lineLineIntersection(this.pos, frontPoint, road.getOffsets(-TrafficSimulation.roadWidth)[0], road.getOffsets(-TrafficSimulation.roadWidth)[1]);
-            if (PVector.angleBetween(this.pos, frontPoint)*10 - PVector.angleBetween(road.a, road.b) > 0) {
-                if (PVector.dist(this.pos, rightIntersectionPoint) < shortestDistance) {
-                    shortestDistance = min(PVector.dist(this.pos, rightIntersectionPoint), this.viewDistance);
-                    this.rightFrontPoint = rightIntersectionPoint;
-                }
-            } else {
-                if (PVector.dist(this.pos, leftIntersectionPoint) < shortestDistance) {
-                    shortestDistance = min(PVector.dist(this.pos, leftIntersectionPoint), this.viewDistance);
-                    this.leftFrontPoint = leftIntersectionPoint;
-                }
-            }
+        // a point in front of the car the view distance away
+        this.frontPoint = new PVector(cos(radians(this.rotation)) * viewDistance + this.pos.x, sin(radians(this.rotation)) * viewDistance + this.pos.y);
+
+        // the intersection points of the front point and the road for both the right side and left side
+        PVector rightIntersectionPoint = lineLineIntersection(this.pos, frontPoint, this.closestRoad.getOffsets(TrafficSimulation.roadWidth)[0], this.closestRoad.getOffsets(TrafficSimulation.roadWidth)[1]);
+        PVector leftIntersectionPoint = lineLineIntersection(this.pos, frontPoint, this.closestRoad.getOffsets(-TrafficSimulation.roadWidth)[0], this.closestRoad.getOffsets(-TrafficSimulation.roadWidth)[1]);
+
+        // if the car is angled towards the right wall, then set the front point to the right front point and vice versa
+        if (PVector.angleBetween(this.pos, frontPoint)*10 - PVector.angleBetween(this.closestRoad.a, this.closestRoad.b) > 0) {
+            this.distances[0] = min(PVector.dist(this.pos, rightIntersectionPoint), this.viewDistance);
+        } else {
+            this.distances[0] = min(PVector.dist(this.pos, leftIntersectionPoint), this.viewDistance);
         }
-        this.distances[0] = shortestDistance;
-//        PVector rightIntersectionPoint = lineLineIntersection(this.pos, frontPoint, this.closestRoad.getOffsets(TrafficSimulation.roadWidth)[0], this.closestRoad.getOffsets(TrafficSimulation.roadWidth)[1]);
-//        PVector leftIntersectionPoint = lineLineIntersection(this.pos, frontPoint, this.closestRoad.getOffsets(-TrafficSimulation.roadWidth)[0], this.closestRoad.getOffsets(-TrafficSimulation.roadWidth)[1]);
-//        if (PVector.angleBetween(this.pos, frontPoint)*10 - PVector.angleBetween(this.closestRoad.a, this.closestRoad.b) > 0) {
-//            this.distances[0] = min(PVector.dist(this.pos, rightIntersectionPoint), this.viewDistance);
-//        } else {
-//            this.distances[0] = min(PVector.dist(this.pos, leftIntersectionPoint), this.viewDistance);
-//        }
 
-//        this.distances[0] = min(PVector.dist(this.pos, rightIntersectionPoint), PVector.dist(this.pos, leftIntersectionPoint), this.viewDistance);
+        this.distances[0] = min(PVector.dist(this.pos, rightIntersectionPoint), PVector.dist(this.pos, leftIntersectionPoint), this.viewDistance);
 
-//        this.leftFrontPoint = leftIntersectionPoint;
-//        this.rightFrontPoint = rightIntersectionPoint;
+        this.leftFrontPoint = leftIntersectionPoint;
+        this.rightFrontPoint = rightIntersectionPoint;
+
         // for the right side of the car
-        PVector rightSidePoint = new PVector(cos(radians(this.rotation + 90)) * viewDistance + this.pos.x, sin(radians(this.rotation + 90)) * viewDistance + this.pos.y);
+        PVector rightSidePoint = new PVector(cos(radians(this.rotation + 90)) * this.viewDistance + this.pos.x, sin(radians(this.rotation + 90)) * viewDistance + this.pos.y);
         PVector intersectionPoint = lineLineIntersection(this.pos, rightSidePoint, this.closestRoad.getOffsets(TrafficSimulation.roadWidth)[0], this.closestRoad.getOffsets(TrafficSimulation.roadWidth)[1]);
         this.distances[2] = min(PVector.dist(this.pos, intersectionPoint), this.viewDistance);
+
         // for the left side of the car
-        PVector leftSidePoint = new PVector(cos(radians(this.rotation - 90)) * viewDistance + this.pos.x, sin(radians(this.rotation - 90)) * viewDistance + this.pos.y);
+        PVector leftSidePoint = new PVector(cos(radians(this.rotation - 90)) * this.viewDistance + this.pos.x, sin(radians(this.rotation - 90)) * viewDistance + this.pos.y);
         intersectionPoint = lineLineIntersection(this.pos, leftSidePoint, this.closestRoad.getOffsets(-TrafficSimulation.roadWidth)[0], this.closestRoad.getOffsets(-TrafficSimulation.roadWidth)[1]);
         this.distances[6] = min(PVector.dist(this.pos, intersectionPoint), this.viewDistance);
 
-        this.speed -= map(this.distances[0], 0, this.viewDistance, (this.closestRoad.speedLimit*this.drivingSpeed-0.1f)/2, 0);
+        updateSpeed();
 
-        if (round(PVector.angleBetween(this.pos, frontPoint)*100)/10f != round(PVector.angleBetween(this.closestRoad.a, this.closestRoad.b)*10)/10f) {
+        updateRotation(2);
+
+        updatePosition();
+    }
+
+    public void updateSpeed() {
+        this.speed -= map(this.distances[0], 0, this.viewDistance, 1, 0);
+        if (PVector.dist(this.pos, this.closestRoad.b) < 10) {
+            this.speed = this.speed/2;
+        }
+    }
+
+    public void updateRotation(int type) {
+        if (type == 0) { // just the sensors
+            if (angle(this.pos, this.frontPoint) != angle(this.closestRoad.a, this.closestRoad.b)) {
+                this.rotation += map(this.distances[2], 0, this.viewDistance, 0, 7);
+                this.rotation -= map(this.distances[6], 0, this.viewDistance, 0, 7);
+            } else {
+                this.rotation += map(this.distances[2], 0, this.viewDistance, 0, 1.5f);
+                this.rotation -= map(this.distances[6], 0, this.viewDistance, 0, 1.5f);
+            }
+        } else if (type == 1) { // just based off angle
+            this.rotation -= (angle(this.pos, this.frontPoint) - angle(this.closestRoad.a, this.closestRoad.b))/10;
+        } else if (type == 2) { // mix
             this.rotation += map(this.distances[2], 0, this.viewDistance, 0, 7);
             this.rotation -= map(this.distances[6], 0, this.viewDistance, 0, 7);
-        } else {
-            this.rotation += map(this.distances[2], 0, this.viewDistance, 0, 1.5f);
-            this.rotation -= map(this.distances[6], 0, this.viewDistance, 0, 1.5f);
-        }
 
+            this.rotation -= (angle(this.pos, this.frontPoint) - angle(this.closestRoad.a, this.closestRoad.b))/10;
+        }
+    }
+
+
+
+    public void updatePosition() {
         this.pos.x += Math.cos(radians(this.rotation)) * this.speed;
         this.pos.y += Math.sin(radians(this.rotation)) * this.speed;
     }
@@ -116,6 +135,12 @@ public class Car {
         float x = ((x1*y2 - y1*x2)*(x3 - x4) - (x1 - x2)*(x3*y4 - y3*x4)) / ((x1 - x2)*(y3 - y4) - (y1 - y2)*(x3 - x4));
         float y = ((x1*y2 - y1*x2)*(y3 - y4) - (y1 - y2)*(x3*y4 - y3*x4)) / ((x1 - x2)*(y3 - y4) - (y1 - y2)*(x3 - x4));
         return new PVector(x, y);
+    }
+
+    // a function that calculates the slope between two PVectors
+    public float angle(PVector a, PVector b) {
+        float slope = (b.y - a.y) / (b.x - a.x);
+        return degrees(atan(slope));
     }
 
 }

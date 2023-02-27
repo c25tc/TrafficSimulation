@@ -11,8 +11,7 @@ public class Road {
         this.speedLimit = speed;
     }
 
-    // a function that offsets the road by a certain amount and returns the two edges
-    public PVector[] getOffsets(float offset) {
+    public PVector[] getOffsets(float offset) { // gets the offsets for the both of the edges and returns them
         PVector[] edges = new PVector[4];
         PVector[] tempEdges = offset(offset);
         edges[0] = tempEdges[0];
@@ -23,7 +22,7 @@ public class Road {
         return edges;
     }
 
-    public PVector[] offset(float offset) {
+    public PVector[] offset(float offset) { // gets the offset in one direction
         PVector[] edges = new PVector[2];
         PVector direction = PVector.sub(b, a);
         direction.normalize();
