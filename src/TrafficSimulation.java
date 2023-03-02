@@ -4,8 +4,6 @@ import processing.event.MouseEvent;
 
 import java.util.ArrayList;
 
-import static processing.core.PApplet.radians;
-
 
 public class TrafficSimulation extends PApplet {
     public static void main(String[] args) {
@@ -20,6 +18,25 @@ public class TrafficSimulation extends PApplet {
     boolean mouseDown;
     int[] mouseDownPos;
     static int roadWidth;
+    ArrayList<Button> buttons = new ArrayList<>();
+
+    // COLORS
+    int backgroundColor = color(225, 239, 246);
+    int lightBlueColor = color(151, 210, 251);
+    int pinkColor = color(236, 203, 217);
+    int darkBlueColor = color(131, 188, 255);
+    int greenColor = color(128, 255, 232);
+
+    // SETTINGS VARIABLES
+    int speed = 1;
+    PVector newRoadStart = new PVector(0, 0);
+    PVector newRoadEnd = new PVector(0 , 0);
+    boolean isEditing = true;
+    boolean isAdding = false;
+    boolean isAddingCars = false;
+    boolean isDeleting = true;
+    float addCarRotation = 0;
+
 
     static ArrayList<Road> roads = new ArrayList<>();
     static ArrayList<Car> cars = new ArrayList<>();
@@ -33,29 +50,49 @@ public class TrafficSimulation extends PApplet {
         offset = new PVector(0, 0);
         mouseDown = false;
         mouseDownPos = new int[4];
-
         roadWidth = 15;
 
+        // create buttons
+        buttons.add(new Button(SCREEN_WIDTH + 30, SCREEN_HEIGHT - 60, 90, 30, lightBlueColor, "Edit", false));
+        buttons.add(new Button(SCREEN_WIDTH + 130, SCREEN_HEIGHT - 60, 90, 30, darkBlueColor, "Simulate", false));
+        buttons.add(new Button(SCREEN_WIDTH + 30, 60, 90, 30, lightBlueColor, "Add Roads", true));
+        buttons.add(new Button(SCREEN_WIDTH + 130, 60, 90, 30, darkBlueColor, "Add Cars", true));
+
+
         roads.add(new Road(100, 100, 300, 500, 1.0f));
-//        roads.add(new Road(1000, 800, 301, 501, 1.0f));
-        roads.add(new Road(301, 501, 1000, 500, 1.0f));
-        cars.add(new Car( 99, 100));
+        cars.add(new Car( 99, 100, 60));
+        cars.add(new Car( 140, 178, 60));
     }
 
     public void draw() {
-        background(0);
+        background(backgroundColor);
+        strokeWeight(1);
+        stroke(255);
         pushMatrix(); // this is a push matrix for pan and zoom
         translate(offset.x, offset.y); // for the pan
         scale(scale); // for the zoom
         drawRoads();
+        drawAddingPreview();
         drawCars();
+        if (!isEditing) {
+            simulate();
+        }
         popMatrix();
         drawSettings();
+
+    }
+
+    void simulate() {
+        for (int i = 0; i < speed; i++) {
+            updateCars();
+        }
     }
 
     void drawSettings () {
-        fill(100);
-        rect(SCREEN_WIDTH, 0, SETTINGS_WIDTH, SCREEN_HEIGHT);
+        fill(pinkColor);
+        rect(SCREEN_WIDTH, 10, SETTINGS_WIDTH - 10, SCREEN_HEIGHT -20, 20);
+        drawButtons();
+        checkButtons();
     }
 
     void drawRoads () {
@@ -85,7 +122,7 @@ public class TrafficSimulation extends PApplet {
             popMatrix();
 
             // update car
-            car.update();
+
 
             // DEBUGGING: for the sensors
             stroke(255);
@@ -98,6 +135,127 @@ public class TrafficSimulation extends PApplet {
         }
     }
 
+    void updateCars () {
+        for (Car car: cars) {
+            car.update();
+        }
+    }
+
+    void drawButtons () {
+        for (Button button: buttons) {
+            if ((isEditing && button.isEdit) || (!isEditing && !button.isEdit) || button.text.equals("Simulate") || button.text.equals("Edit")) {
+
+                if (button.isActive) {
+                    stroke(0);
+                    strokeWeight(2);
+                } else {
+                    noStroke();
+                }
+                fill(button.color);
+                rect(button.x, button.y, button.w, button.h, 10);
+                fill(0);
+                text(button.text, button.x + 10, button.y + button.h / 2f + 3);
+            }
+
+        }
+    }
+
+    void checkButtons () {
+        if (mousePressed) {
+            for (Button button: buttons) {
+                if (button.isClicked(mouseX, mouseY)) {
+                    System.out.println(button.text);
+                    switch (button.text) {
+                        case "Edit" -> {
+                            button.isActive = true;
+                            buttons.get(1).isActive = false;
+                            isEditing = true;
+                            isAdding = false;
+                            isDeleting = false;
+                        }
+                        case "Simulate" -> {
+                            button.isActive = true;
+                            buttons.get(0).isActive = false;
+                            isEditing = false;
+                            isAdding = false;
+                            isDeleting = false;
+                        }
+                        case "Add Roads" -> {
+                            button.isActive = true;
+                            buttons.get(3).isActive = false;
+                            isAddingCars = false;
+                            isAdding = false;
+                            isDeleting = false;
+                        }
+                        case "Add Cars" -> {
+                            button.isActive = true;
+                            isAddingCars = true;
+                            buttons.get(2).isActive = false;
+                            isAdding = false;
+                            isDeleting = false;
+                        }
+                        case "Delete" -> {
+                            button.isActive = true;
+                            buttons.get(4).isActive = false;
+                            isAdding = false;
+                            isDeleting = true;
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+
+    void drawAddingPreview() {
+        if (mouseX > 0 && mouseX < SCREEN_WIDTH && mouseY > 0 && mouseY < SCREEN_HEIGHT && isEditing) {
+            if (isAddingCars) {
+                fill(255);
+                noStroke();
+                pushMatrix(); // a push matrix for the car location
+                translate(newRoadStart.x, newRoadStart.y);
+                rotate(radians(addCarRotation));
+                fill(255, 100);
+                rect(0, -5, 10, 10);
+                fill(255);
+                rect(-10, -5, 10, 10);
+                popMatrix();
+            } else {
+                if (isAdding) {
+                    stroke(255);
+                    strokeWeight(3);
+                    line(newRoadStart.x, newRoadStart.y, newRoadEnd.x, newRoadEnd.y);
+                    strokeWeight(1);
+                } else {
+                    fill(255);
+                    noStroke();
+                    circle(newRoadStart.x, newRoadStart.y, 10);
+                }
+            }
+        }
+
+    }
+
+    public PVector getClosestPointOnSegment(Road road, PVector pos) {
+        double xDelta = road.b.x - road.a.x;
+        double yDelta = road.b.y - road.a.y;
+
+        double u = ((pos.x - road.a.x) * xDelta + (pos.y - road.a.y) * yDelta) / (xDelta * xDelta + yDelta * yDelta);
+
+        final PVector closestPoint;
+        if (u < 0) {
+            closestPoint = road.a;
+        }
+        else if (u > 1) {
+            closestPoint = road.b;
+        }
+        else {
+            closestPoint = new PVector((int) Math.round(road.a.x + u * xDelta), (int) Math.round(road.a.y + u * yDelta));
+        }
+
+        return closestPoint;
+    }
+
     // all the stuff to make the board pan and zoom and stuff
     public void mouseWheel(MouseEvent event) {
         float e = event.getCount();
@@ -107,6 +265,64 @@ public class TrafficSimulation extends PApplet {
             offset.y -= e * ((mouseY) / 100f);
         }
     }
+
+    public void mouseClicked() {
+        if (mouseX < SCREEN_WIDTH) {
+            if (isEditing) {
+                if (isDeleting) {
+                    if (isAddingCars) {
+                            for (Car car: cars) {
+                                if (PVector.dist(car.pos, new PVector((mouseX - offset.x) / scale,(mouseY - offset.y) / scale) ) < 10 && cars.size() > 1) {
+                                    cars.remove(car);
+                                    break;
+                                }
+                            }
+                    } else {
+                        System.out.println("deleting");
+                    }
+                } else {
+                    if (isAddingCars) {
+                        cars.add(new Car((int)((mouseX - offset.x) / scale), (int)((mouseY - offset.y) / scale), addCarRotation));
+                    } else {
+                        if (!isAdding) {
+                            newRoadEnd = new PVector(((mouseX - offset.x) / scale), ((mouseY - offset.y) / scale));
+                            isAdding = true;
+                        } else {
+                            roads.add(new Road((int)newRoadStart.x, (int)newRoadStart.y, (int)newRoadEnd.x, (int)newRoadEnd.y, 1.0f));
+                            isAdding = false;
+                        }
+                    }
+                }
+
+
+            }
+        }
+
+    }
+    public void mouseMoved() {
+        if (mouseX < SCREEN_WIDTH) {
+            if (isAdding) {
+                newRoadEnd = new PVector(((mouseX - offset.x) / scale), ((mouseY - offset.y) / scale));
+                for (Road road: roads) {
+                    if (PVector.dist(new PVector(((mouseX - offset.x) / scale), ((mouseY - offset.y) / scale)), road.a) < 20) {
+                        newRoadEnd = road.a;
+                    } else if (PVector.dist(new PVector(((mouseX - offset.x) / scale), ((mouseY - offset.y) / scale)), road.b) < 20) {
+                        newRoadEnd = road.b;
+                    }
+                }
+            } else {
+                newRoadStart = new PVector(((mouseX - offset.x) / scale), ((mouseY - offset.y) / scale));
+                for (Road road: roads) {
+                    if (PVector.dist(new PVector(((mouseX - offset.x) / scale), ((mouseY - offset.y) / scale)), road.a) < 20) {
+                        newRoadStart = road.a;
+                    } else if (PVector.dist(new PVector(((mouseX - offset.x) / scale), ((mouseY - offset.y) / scale)), road.b) < 20) {
+                        newRoadStart = road.b;
+                    }
+                }
+            }
+        }
+
+    }
     public void mousePressed() {
         if (mouseX < SCREEN_WIDTH) { // in the board area
             mouseDownPos[0] = mouseX;
@@ -114,13 +330,6 @@ public class TrafficSimulation extends PApplet {
             mouseDownPos[2] = (int) offset.x;
             mouseDownPos[3] = (int) offset.y;
             mouseDown = true;
-//            for (Organism org :
-//                    organismsList) {
-//                if (Math.abs((mouseX - offset.x) / (boardWidth / (float) SCREEN_WIDTH) - (org.pos.x + (org.cells.length * cellSize) / 2f)) < 10 && Math.abs((mouseY - offset.y) / (boardHeight / (float) SCREEN_HEIGHT) - (org.pos.y + (org.cells[0].length * cellSize) / 2f)) < 10) {
-////                    organismLookAtNum = org.key;
-//                    lookAtOrg = org;
-//                }
-//            }
 
         }
     }
@@ -135,4 +344,12 @@ public class TrafficSimulation extends PApplet {
         mouseDown = false;
     }
 
+    public void keyPressed() {
+        if (key == CODED) {
+            if (keyCode == UP && speed < 20) speed++;
+            if (keyCode == DOWN && speed > 0) speed--;
+            if (keyCode == LEFT && addCarRotation > 0 && isEditing && isAddingCars) addCarRotation -= 3;
+            if (keyCode == RIGHT && addCarRotation < 359 && isEditing && isAddingCars) addCarRotation += 3;
+        }
+    }
 }
