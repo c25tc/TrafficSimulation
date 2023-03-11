@@ -70,12 +70,15 @@ public class Car {
             if (car != this) {
                 // get the distance between the car and this car
                 PVector carIntersectionPoint = lineLineIntersection(this.pos, frontPoint, car.pos, car.horizontalPoint);
-                if (PVector.dist(carIntersectionPoint, this.frontPoint) < PVector.dist(carIntersectionPoint, this.pos)) {
-                    float distance = PVector.dist(this.pos, carIntersectionPoint);
-                    if (distance < closestDistance) {
-                        closestDistance = distance - 30; // so the car doesn't crash into the other car
+                if (PVector.dist(carIntersectionPoint, car.pos) < 20) {
+                    if (PVector.dist(carIntersectionPoint, this.frontPoint) < PVector.dist(carIntersectionPoint, this.pos)) {
+                        float distance = PVector.dist(this.pos, carIntersectionPoint);
+                        if (distance < closestDistance) {
+                            closestDistance = distance - 20; // so the car doesn't crash into the other car
+                        }
                     }
                 }
+
 
             }
         }
@@ -150,8 +153,8 @@ public class Car {
 
     // From online
     public PVector getClosestPointOnSegment(Road road) {
-        double xDelta = road.b.x - road.a.x;
-        double yDelta = road.b.y - road.a.y;
+        double xDelta = road.c.x - road.a.x;
+        double yDelta = road.c.y - road.a.y;
 
         double u = ((this.pos.x - road.a.x) * xDelta + (this.pos.y - road.a.y) * yDelta) / (xDelta * xDelta + yDelta * yDelta);
 
@@ -160,7 +163,7 @@ public class Car {
             closestPoint = road.a;
         }
         else if (u > 1) {
-            closestPoint = road.b;
+            closestPoint = road.c;
         }
         else {
             closestPoint = new PVector((int) Math.round(road.a.x + u * xDelta), (int) Math.round(road.a.y + u * yDelta));

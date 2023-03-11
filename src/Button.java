@@ -7,14 +7,14 @@ public class Button {
     boolean isActive;
     String text;
     boolean isEdit;
-    public Button(int x, int y, int w, int h, int color, String text, boolean isEdit) {
+    public Button(int x, int y, int w, int h, int color, String text, boolean isActive, boolean isEdit) {
         this.x = x;
         this.y = y;
         this.w = w;
         this.h = h;
         this.text = text;
         this.color = color;
-        this.isActive = false;
+        this.isActive = isActive;
         this.isEdit = isEdit;
     }
     public boolean isClicked(int x, int y) {

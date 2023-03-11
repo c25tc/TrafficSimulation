@@ -4,6 +4,7 @@ import processing.event.MouseEvent;
 
 import java.util.ArrayList;
 
+// to fix road issue make it think the end of the road is one pixel less in the direction than it actually is
 
 public class TrafficSimulation extends PApplet {
     public static void main(String[] args) {
@@ -34,7 +35,7 @@ public class TrafficSimulation extends PApplet {
     boolean isEditing = true;
     boolean isAdding = false;
     boolean isAddingCars = false;
-    boolean isDeleting = true;
+    boolean isDeleting = false;
     float addCarRotation = 0;
 
 
@@ -53,10 +54,12 @@ public class TrafficSimulation extends PApplet {
         roadWidth = 15;
 
         // create buttons
-        buttons.add(new Button(SCREEN_WIDTH + 30, SCREEN_HEIGHT - 60, 90, 30, lightBlueColor, "Edit", false));
-        buttons.add(new Button(SCREEN_WIDTH + 130, SCREEN_HEIGHT - 60, 90, 30, darkBlueColor, "Simulate", false));
-        buttons.add(new Button(SCREEN_WIDTH + 30, 60, 90, 30, lightBlueColor, "Add Roads", true));
-        buttons.add(new Button(SCREEN_WIDTH + 130, 60, 90, 30, darkBlueColor, "Add Cars", true));
+        buttons.add(new Button(SCREEN_WIDTH + 30, SCREEN_HEIGHT - 60, 90, 30, lightBlueColor, "Edit", true, false));
+        buttons.add(new Button(SCREEN_WIDTH + 130, SCREEN_HEIGHT - 60, 90, 30, darkBlueColor, "Simulate", false, false));
+        buttons.add(new Button(SCREEN_WIDTH + 30, 60, 90, 30, lightBlueColor, "Roads", true,true));
+        buttons.add(new Button(SCREEN_WIDTH + 130, 60, 90, 30, darkBlueColor, "Cars", false,true));
+        buttons.add(new Button(SCREEN_WIDTH + 30, 100, 90, 30, darkBlueColor, "Delete", false,true));
+        buttons.add(new Button(SCREEN_WIDTH + 130, 100, 90, 30, darkBlueColor, "Add", true,true));
 
 
         roads.add(new Road(100, 100, 300, 500, 1.0f));
@@ -151,6 +154,7 @@ public class TrafficSimulation extends PApplet {
                 } else {
                     noStroke();
                 }
+
                 fill(button.color);
                 rect(button.x, button.y, button.w, button.h, 10);
                 fill(0);
@@ -171,34 +175,36 @@ public class TrafficSimulation extends PApplet {
                             buttons.get(1).isActive = false;
                             isEditing = true;
                             isAdding = false;
-                            isDeleting = false;
                         }
                         case "Simulate" -> {
                             button.isActive = true;
                             buttons.get(0).isActive = false;
                             isEditing = false;
                             isAdding = false;
-                            isDeleting = false;
                         }
-                        case "Add Roads" -> {
+                        case "Roads" -> {
                             button.isActive = true;
                             buttons.get(3).isActive = false;
                             isAddingCars = false;
                             isAdding = false;
-                            isDeleting = false;
                         }
-                        case "Add Cars" -> {
+                        case "Cars" -> {
                             button.isActive = true;
                             isAddingCars = true;
                             buttons.get(2).isActive = false;
                             isAdding = false;
-                            isDeleting = false;
                         }
                         case "Delete" -> {
                             button.isActive = true;
-                            buttons.get(4).isActive = false;
+                            buttons.get(5).isActive = false;
                             isAdding = false;
                             isDeleting = true;
+                        }
+                        case "Add" -> {
+                            button.isActive = true;
+                            buttons.get(4).isActive = false;
+                            isAdding = false;
+                            isDeleting = false;
                         }
                     }
                 }
@@ -259,10 +265,10 @@ public class TrafficSimulation extends PApplet {
     // all the stuff to make the board pan and zoom and stuff
     public void mouseWheel(MouseEvent event) {
         float e = event.getCount();
-        if (mouseX < SCREEN_WIDTH) {
+        if (mouseX < SCREEN_WIDTH && (scale > 0.1f || e > 0)) {
             scale += e * 0.01f;
-            offset.x -= e * ((mouseX) / 100f);
-            offset.y -= e * ((mouseY) / 100f);
+            offset.x -= e * (((mouseX - offset.x) / scale) / 100f);
+            offset.y -= e * (((mouseY - offset.y) / scale) / 100f);
         }
     }
 
@@ -278,7 +284,12 @@ public class TrafficSimulation extends PApplet {
                                 }
                             }
                     } else {
-                        System.out.println("deleting");
+                        for (Road road: roads) {
+                            if (PVector.dist(getClosestPointOnSegment(road, new PVector((mouseX - offset.x) / scale,(mouseY - offset.y) / scale)), new PVector((mouseX - offset.x) / scale,(mouseY - offset.y) / scale)) < roadWidth/2f && roads.size() > 1) {
+                                roads.remove(road);
+                                break;
+                            }
+                        }
                     }
                 } else {
                     if (isAddingCars) {
@@ -348,8 +359,9 @@ public class TrafficSimulation extends PApplet {
         if (key == CODED) {
             if (keyCode == UP && speed < 20) speed++;
             if (keyCode == DOWN && speed > 0) speed--;
-            if (keyCode == LEFT && addCarRotation > 0 && isEditing && isAddingCars) addCarRotation -= 3;
-            if (keyCode == RIGHT && addCarRotation < 359 && isEditing && isAddingCars) addCarRotation += 3;
+            if (keyCode == LEFT && isEditing && isAddingCars) addCarRotation -= 10;
+            if (keyCode == RIGHT && isEditing && isAddingCars) addCarRotation += 10;
+            addCarRotation %= 360;
         }
     }
 }
