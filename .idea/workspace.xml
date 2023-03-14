@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="cef2a60a-942a-45d3-8042-4db77613c991" name="Changes" comment="Adding Editor">
+    <list default="true" id="cef2a60a-942a-45d3-8042-4db77613c991" name="Changes" comment="Adding turn less than 90 degrees possible">
+      <change afterPath="$PROJECT_DIR$/src/Slider.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/StopLight.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Button.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/Button.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Car.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/Car.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Road.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/Road.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/TrafficSimulation.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/TrafficSimulation.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -25,6 +25,9 @@
   </component>
   <component name="GithubDefaultAccount">
     <option name="defaultAccountId" value="86bc8694-fa3d-4ffe-aa30-3cc08d4b5693" />
+  </component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/src/Car.java" root0="FORCE_HIGHLIGHTING" />
   </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
@@ -92,7 +95,14 @@
       <option name="project" value="LOCAL" />
       <updated>1677723621102</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="Adding turn less than 90 degrees possible">
+      <created>1678554188199</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1678554188199</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -110,7 +120,8 @@
     <MESSAGE value="Initial Commit" />
     <MESSAGE value="Working Driving Now" />
     <MESSAGE value="Adding Editor" />
-    <option name="LAST_COMMIT_MESSAGE" value="Adding Editor" />
+    <MESSAGE value="Adding turn less than 90 degrees possible" />
+    <option name="LAST_COMMIT_MESSAGE" value="Adding turn less than 90 degrees possible" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

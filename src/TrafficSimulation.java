@@ -14,12 +14,14 @@ public class TrafficSimulation extends PApplet {
     // GLOBAL VARIABLES
     int SCREEN_WIDTH = 1125, SCREEN_HEIGHT = 750;
     int SETTINGS_WIDTH = 250;
+    static int systemTime = 0;
     float scale;
     PVector offset;
     boolean mouseDown;
     int[] mouseDownPos;
     static int roadWidth;
     ArrayList<Button> buttons = new ArrayList<>();
+    ArrayList<Slider> sliders = new ArrayList<>();
 
     // COLORS
     int backgroundColor = color(225, 239, 246);
@@ -35,12 +37,17 @@ public class TrafficSimulation extends PApplet {
     boolean isEditing = true;
     boolean isAdding = false;
     boolean isAddingCars = false;
+    boolean isAddingStopLight = false;
     boolean isDeleting = false;
     float addCarRotation = 0;
+    float stopLightOnDuration = 5;
+    float stopLightOffDuration = 5;
+    boolean stopLightIsOn = true;
 
 
     static ArrayList<Road> roads = new ArrayList<>();
     static ArrayList<Car> cars = new ArrayList<>();
+    static ArrayList<StopLight> stopLights = new ArrayList<>();
 
     public void settings() {
         size(SCREEN_WIDTH + SETTINGS_WIDTH, SCREEN_HEIGHT);
@@ -54,12 +61,18 @@ public class TrafficSimulation extends PApplet {
         roadWidth = 15;
 
         // create buttons
-        buttons.add(new Button(SCREEN_WIDTH + 30, SCREEN_HEIGHT - 60, 90, 30, lightBlueColor, "Edit", true, false));
+        buttons.add(new Button(SCREEN_WIDTH + 30, SCREEN_HEIGHT - 60, 90, 30, darkBlueColor, "Edit", true, false));
         buttons.add(new Button(SCREEN_WIDTH + 130, SCREEN_HEIGHT - 60, 90, 30, darkBlueColor, "Simulate", false, false));
-        buttons.add(new Button(SCREEN_WIDTH + 30, 60, 90, 30, lightBlueColor, "Roads", true,true));
+        buttons.add(new Button(SCREEN_WIDTH + 30, 60, 90, 30, darkBlueColor, "Roads", true,true));
         buttons.add(new Button(SCREEN_WIDTH + 130, 60, 90, 30, darkBlueColor, "Cars", false,true));
-        buttons.add(new Button(SCREEN_WIDTH + 30, 100, 90, 30, darkBlueColor, "Delete", false,true));
-        buttons.add(new Button(SCREEN_WIDTH + 130, 100, 90, 30, darkBlueColor, "Add", true,true));
+        buttons.add(new Button(SCREEN_WIDTH + 30, 140, 90, 30, darkBlueColor, "Delete", false,true));
+        buttons.add(new Button(SCREEN_WIDTH + 130, 140, 90, 30, darkBlueColor, "Add", true,true));
+        buttons.add(new Button(SCREEN_WIDTH + 30, 100, 90, 30, darkBlueColor, "Stop Light", false,true));
+
+        // create sliders
+        sliders.add(new Slider(SCREEN_WIDTH + 30, 220, 1, 10, "On Time", true));
+        sliders.add(new Slider(SCREEN_WIDTH + 30, 260, 1, 10, "Off Time", true));
+
 
 
         roads.add(new Road(100, 100, 300, 500, 1.0f));
@@ -77,6 +90,7 @@ public class TrafficSimulation extends PApplet {
         drawRoads();
         drawAddingPreview();
         drawCars();
+        drawStopLights();
         if (!isEditing) {
             simulate();
         }
@@ -87,7 +101,9 @@ public class TrafficSimulation extends PApplet {
 
     void simulate() {
         for (int i = 0; i < speed; i++) {
+            systemTime++;
             updateCars();
+            updateStopLights();
         }
     }
 
@@ -137,10 +153,23 @@ public class TrafficSimulation extends PApplet {
             circle(car.leftFrontPoint.x, car.leftFrontPoint.y, 5);
         }
     }
+    void drawStopLights () {
+        for (StopLight stopLight: stopLights) {
+            fill(100);
+            if (stopLight.isOn)
+                fill(pinkColor);
+            circle(stopLight.pos.x, stopLight.pos.y, 20);
+        }
+    }
 
     void updateCars () {
         for (Car car: cars) {
             car.update();
+        }
+    }
+    void updateStopLights () {
+        for (StopLight stopLight: stopLights) {
+            stopLight.update();
         }
     }
 
@@ -168,7 +197,6 @@ public class TrafficSimulation extends PApplet {
         if (mousePressed) {
             for (Button button: buttons) {
                 if (button.isClicked(mouseX, mouseY)) {
-                    System.out.println(button.text);
                     switch (button.text) {
                         case "Edit" -> {
                             button.isActive = true;
@@ -185,13 +213,17 @@ public class TrafficSimulation extends PApplet {
                         case "Roads" -> {
                             button.isActive = true;
                             buttons.get(3).isActive = false;
+                            buttons.get(6).isActive = false;
                             isAddingCars = false;
+                            isAddingStopLight = false;
                             isAdding = false;
                         }
                         case "Cars" -> {
                             button.isActive = true;
                             isAddingCars = true;
+                            isAddingStopLight = false;
                             buttons.get(2).isActive = false;
+                            buttons.get(6).isActive = false;
                             isAdding = false;
                         }
                         case "Delete" -> {
@@ -205,6 +237,13 @@ public class TrafficSimulation extends PApplet {
                             buttons.get(4).isActive = false;
                             isAdding = false;
                             isDeleting = false;
+                        }
+                        case "Stop Light" -> {
+                            button.isActive = true;
+                            buttons.get(2).isActive = false;
+                            buttons.get(3).isActive = false;
+                            isAddingCars = false;
+                            isAddingStopLight = true;
                         }
                     }
                 }
@@ -277,12 +316,19 @@ public class TrafficSimulation extends PApplet {
             if (isEditing) {
                 if (isDeleting) {
                     if (isAddingCars) {
-                            for (Car car: cars) {
-                                if (PVector.dist(car.pos, new PVector((mouseX - offset.x) / scale,(mouseY - offset.y) / scale) ) < 10 && cars.size() > 1) {
-                                    cars.remove(car);
-                                    break;
-                                }
+                        for (Car car: cars) {
+                            if (PVector.dist(car.pos, new PVector((mouseX - offset.x) / scale,(mouseY - offset.y) / scale) ) < 10 && cars.size() > 1) {
+                                cars.remove(car);
+                                break;
                             }
+                        }
+                    } else if (isAddingStopLight) {
+                        for (StopLight stopLight: stopLights) {
+                            if (PVector.dist(stopLight.pos, new PVector((mouseX - offset.x) / scale,(mouseY - offset.y) / scale) ) < 15) {
+                                stopLights.remove(stopLight);
+                                break;
+                            }
+                        }
                     } else {
                         for (Road road: roads) {
                             if (PVector.dist(getClosestPointOnSegment(road, new PVector((mouseX - offset.x) / scale,(mouseY - offset.y) / scale)), new PVector((mouseX - offset.x) / scale,(mouseY - offset.y) / scale)) < roadWidth/2f && roads.size() > 1) {
@@ -294,6 +340,8 @@ public class TrafficSimulation extends PApplet {
                 } else {
                     if (isAddingCars) {
                         cars.add(new Car((int)((mouseX - offset.x) / scale), (int)((mouseY - offset.y) / scale), addCarRotation));
+                    } else if (isAddingStopLight) {
+                        stopLights.add(new StopLight((int)((mouseX - offset.x) / scale), (int)((mouseY - offset.y) / scale), stopLightOnDuration, stopLightOffDuration, stopLightIsOn));
                     } else {
                         if (!isAdding) {
                             newRoadEnd = new PVector(((mouseX - offset.x) / scale), ((mouseY - offset.y) / scale));

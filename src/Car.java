@@ -5,8 +5,8 @@ import static processing.core.PApplet.*;
 public class Car {
     PVector pos;
     float rotation;
-    float drivingSpeed;
-    float speed;
+    float preferredSpeedMultiplier;
+    float currentSpeed;
     float viewDistance;
     float[] distances;
     Road closestRoad;
@@ -19,8 +19,8 @@ public class Car {
     public Car(int x, int y, float rotation) {
         this.pos = new PVector(x, y);
         this.rotation = rotation;
-        this.speed = 1; // arbitrary
-        this.drivingSpeed = 1 + ((float)Math.random()/5 - 0.1f); // to simulate different driving preferences
+        this.currentSpeed = 1; // arbitrary
+        this.preferredSpeedMultiplier = 1 + ((float)Math.random()/5 - 0.1f); // to simulate different driving preferences
         this.closestRoad = findClosestRoad();
         this.viewDistance = 80; // can change
         this.frontPoint = new PVector();
@@ -34,7 +34,7 @@ public class Car {
 
     public void update() {
         this.closestRoad = findClosestRoad();
-        this.speed = this.closestRoad.speedLimit * this.drivingSpeed;
+        this.currentSpeed = this.closestRoad.speedLimit * this.preferredSpeedMultiplier;
 
         // for the front of the car
         this.frontPoint = new PVector(cos(radians(this.rotation)) * 3 + this.pos.x, sin(radians(this.rotation)) * 3 + this.pos.y);
@@ -65,7 +65,7 @@ public class Car {
             this.distances[0] = min(PVector.dist(this.pos, leftIntersectionPoint), this.viewDistance);
         }
 
-        float closestDistance = 999999f;
+        float closestCarDistance = 999999f;
         for (Car car : TrafficSimulation.cars) {
             if (car != this) {
                 // get the distance between the car and this car
@@ -73,8 +73,8 @@ public class Car {
                 if (PVector.dist(carIntersectionPoint, car.pos) < 20) {
                     if (PVector.dist(carIntersectionPoint, this.frontPoint) < PVector.dist(carIntersectionPoint, this.pos)) {
                         float distance = PVector.dist(this.pos, carIntersectionPoint);
-                        if (distance < closestDistance) {
-                            closestDistance = distance - 20; // so the car doesn't crash into the other car
+                        if (distance < closestCarDistance) {
+                            closestCarDistance = distance - 20; // so the car doesn't crash into the other car
                         }
                     }
                 }
@@ -83,7 +83,20 @@ public class Car {
             }
         }
 
-        this.distances[0] = min(closestDistance, this.distances[0]);
+        float closestStopLightDistance = 999999f;
+        for (StopLight stopLight : TrafficSimulation.stopLights) {
+            if (stopLight.isOn) {
+                if (PVector.dist(this.pos, stopLight.pos) < this.viewDistance) {
+                    float distance = PVector.dist(this.pos, stopLight.pos);
+                    if (distance < closestStopLightDistance) {
+                        closestStopLightDistance = distance - 30; // so the car doesn't crash into the other car
+                    }
+                }
+            }
+        }
+
+
+        this.distances[0] = min(closestCarDistance, closestStopLightDistance, this.distances[0]);
 
 
         // DEBUGGING: the intersection points of the front point and the road for both the right side and left side
@@ -104,11 +117,11 @@ public class Car {
     }
 
     public void updateSpeed() {
-        this.speed -= map(this.distances[0], 0, this.viewDistance, 1, 0);
+        this.currentSpeed -= map(this.distances[0], 0, this.viewDistance, 1, 0);
         if (PVector.dist(this.pos, this.closestRoad.b) < 10) {
-            this.speed = this.speed/2;
+            this.currentSpeed = this.currentSpeed /2;
         }
-        this.speed = max(this.speed, 0);
+        this.currentSpeed = max(this.currentSpeed, 0);
     }
 
     public void updateRotation(int type) {
@@ -131,8 +144,8 @@ public class Car {
     }
 
     public void updatePosition() {
-        this.pos.x += Math.cos(radians(this.rotation)) * this.speed;
-        this.pos.y += Math.sin(radians(this.rotation)) * this.speed;
+        this.pos.x += Math.cos(radians(this.rotation)) * this.currentSpeed;
+        this.pos.y += Math.sin(radians(this.rotation)) * this.currentSpeed;
     }
 
     // -------- Helper Functions --------
